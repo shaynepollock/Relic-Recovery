@@ -1,0 +1,198 @@
+/* Relic recovery 2017. Claw (180 servos), mecanum wheels. Shayne Pollock */
+package org.firstinspires.ftc.teamcode;   
+  
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;  
+import com.qualcomm.robotcore.hardware.ColorSensor;  
+import com.qualcomm.robotcore.hardware.Servo;  
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;  
+import com.qualcomm.robotcore.hardware.Gamepad;  
+import com.qualcomm.robotcore.hardware.DcMotor;  
+  
+@TeleOp  
+public class DriveTrainSS extends LinearOpMode  
+{  
+    private DcMotor frontRight;  
+    private DcMotor frontLeft;  
+    private DcMotor backRight;  
+    private DcMotor backLeft;  
+    private DcMotor vLiftMotor;  
+    private Servo leftClaw_t;
+    private Servo leftClaw_b;
+    private Servo rightClaw_t;
+    private Servo rightClaw_b; 
+    private Servo topJewel;
+    private Servo bottomJewel;
+    
+    @Override  
+    public void runOpMode()   
+    {  
+    //when user presses INIT this code will be used 
+    
+        telemetry.addData("Status", "Initialized");  
+        telemetry.update();  
+          
+        //connects motors to hub & phone- use name in quotes for config  
+        frontRight = hardwareMap.get(DcMotor.class, "front_Right");  
+        frontLeft  = hardwareMap.get(DcMotor.class, "front_Left");  
+        backRight  = hardwareMap.get(DcMotor.class, "back_Right");  
+        backLeft   = hardwareMap.get(DcMotor.class, "back_Left");  
+        vLiftMotor = hardwareMap.get(DcMotor.class, "vLift_Motor");  
+        leftClaw_t  = hardwareMap.get(Servo.class,"topLeft_Claw");  
+        rightClaw_t = hardwareMap.get(Servo.class,"topRight_Claw"); 
+        leftClaw_b  = hardwareMap.get(Servo.class,"bottomLeft_Claw");  
+        rightClaw_b = hardwareMap.get(Servo.class,"bottomRight_Claw");
+        topJewel = hardwareMap.get(Servo.class,"top_Jewel");
+        bottomJewel = hardwareMap.get(Servo.class,"bottom_Jewel");
+        
+        //set direction of motors  
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);  
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setDirection(DcMotor.Direction.REVERSE);  
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        vLiftMotor.setDirection(DcMotor.Direction.REVERSE);
+        vLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+      
+        waitForStart(); //this is waiting for play 
+        // dont forget the gamepad start sequence (start+a/b)  
+      
+        //when user presses play this code will be used  
+        while (opModeIsActive())   
+        {  
+            topJewel.setPosition(.1);
+            bottomJewel.setPosition(.5);
+            
+            mecanumDrive();  
+              
+            if (gamepad1.dpad_left || gamepad1.dpad_right)  
+            {  
+                pivot();  
+            }  
+              
+            vLift();
+              
+            // if (gamepad2.dpad_left || gamepad2.dpad_right 
+            //     ||gamepad2.b ||gamepad2.x || gamepad2.dpad_down )  
+            // {  
+                claw();  
+            //}  
+              
+            while (gamepad1.b & gamepad1.y)   
+            {  
+                test();   
+            }  
+              
+        }//opModeIsActive  
+      
+    }//runOpMode 
+    
+    //----------------------------------------------------------------------------------------------
+    //Methods
+    //----------------------------------------------------------------------------------------------
+       
+        //weird code for mecanum wheels that gets the angle based on joystick and sets power      
+        protected void mecanumDrive()  
+        {  
+            double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);  
+            double robotAngle = Math.atan2(gamepad1.left_stick_y, -gamepad1.left_stick_x) - Math.PI / 4;  
+            double rightX = -gamepad1.right_stick_x;  
+            final double FL = r * Math.cos(robotAngle) + rightX;  
+            final double FR = r * Math.sin(robotAngle) - rightX;  
+            final double BL = r * Math.sin(robotAngle) + rightX;  
+            final double BR = r * Math.cos(robotAngle) - rightX;  
+            
+            frontLeft.setPower(FL);  
+            frontRight.setPower(FR);  
+            backLeft.setPower(BL);  
+            backRight.setPower(BR);  
+        }     
+          
+        protected void pivot()  
+        {  
+            //left pivot  
+            while (gamepad1.dpad_right)   
+            {  
+                frontLeft.setPower(-.5);  
+                frontRight.setPower(.5);  
+                backLeft.setPower(-.5);  
+                backRight.setPower(.5);    
+            }  
+              
+            //right pivot  
+            while (gamepad1.dpad_left)   
+            {  
+                frontLeft.setPower(.5);  
+                frontRight.setPower(-.5);  
+                backLeft.setPower(.5);  
+                backRight.setPower(-.5);  
+            }  
+        }  
+       
+        protected void claw()   
+        {  
+            if (gamepad2.dpad_left) //top out 
+            {  
+                leftClaw_t.setPosition(.7);  
+                rightClaw_t.setPosition(.35);  
+            }  
+            
+            if(gamepad2.b) //bottom out
+            {
+                leftClaw_b.setPosition(.7);
+                rightClaw_b.setPosition(.3);
+            }
+            
+            if (gamepad2.dpad_right)  //top in
+            {  
+                leftClaw_t.setPosition(0);  
+                rightClaw_t.setPosition(1);  
+            }  
+            
+            if(gamepad2.x) //bottom in
+            {
+                leftClaw_b.setPosition(.3);
+                rightClaw_b.setPosition(.7);
+            }
+            
+            if (gamepad2.dpad_up) //top more out
+            {
+                leftClaw_t.setPosition(.9);
+                rightClaw_t.setPosition(.1);
+            }
+            
+            if (gamepad2.dpad_down) //bottom more out
+            {
+                leftClaw_b.setPosition(.9);
+                rightClaw_b.setPosition(.1);
+            }
+        }//end claw()  
+          
+        protected void vLift()  
+        {  
+            if(gamepad2.y){ 
+                vLiftMotor.setPower(-1);
+            }
+            
+            else if(gamepad2.a){
+                vLiftMotor.setPower(1);
+            }
+            
+            else{
+                vLiftMotor.setPower(0);
+            }
+        }  
+          
+        // tests each motor to see if something is wrong (ie sprockets loose) 
+        // must hold down y and b while testing  
+        protected void test()   
+        {  
+            frontLeft.setPower(gamepad1.left_stick_y);  
+            frontRight.setPower(gamepad1.right_stick_y);  
+            backLeft.setPower(gamepad1.left_stick_x);  
+            backRight.setPower(gamepad1.right_stick_x);  
+        }  
+    
+}//end class  
