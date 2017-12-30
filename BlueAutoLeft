@@ -1,0 +1,615 @@
+//Shayne 12/20/17
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+
+import org.firstinspires.ftc.robotcore.external.Func;
+import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
+
+import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+
+import java.util.Locale;
+
+@Autonomous
+
+public class BlueAutoLeft extends LinearOpMode
+{
+    OpenGLMatrix lastLocation = null;
+    private DcMotor frontRight;  
+    private DcMotor frontLeft;  
+    private DcMotor backRight;  
+    private DcMotor backLeft;  
+    private BNO055IMU imu;
+    private ColorSensor colorSensor;  
+    private Servo topJewel;
+    private Servo bottomJewel;
+    private DcMotor vLiftMotor;
+    private Servo leftClaw;  
+    private Servo rightClaw;
+    VuforiaLocalizer vuforia;
+    private ElapsedTime runtime = new ElapsedTime();
+    
+    static final double COUNTS_PER_MOTOR_REV =1120; //NeveRest 40 motor gives 1120         counts per revolution of output shaft 
+    static final double DRIVE_GEAR_REDUCTION = .66; //<1.0 if geared Up (big to small) output/input. input gear turns 1/2 for output to turn once.
+    static final double WHEEL_DIAMETER_INCHES = 4.0;
+    static final double COUNTS_PER_INCH = ( COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
+    //encoder counts x gear reduction / circumference of wheel 
+    
+    int target_vuL, target_vuR;
+    
+    int positionFL= frontLeft.getCurrentPosition(); 
+    int positionBL= backLeft.getCurrentPosition();
+    int positionFR= frontRight.getCurrentPosition();
+    int positionBR= backRight.getCurrentPosition();
+    
+    int targetFL_L, targetBL_L, targetFR_L, targetBR_L;
+    
+    int targetFL_R, targetBL_R, targetFR_R, targetBR_R;
+    
+    int targetFL_C, targetBL_C, targetFR_C, targetBR_C;
+    
+    int targetFL_push, targetBL_push, targetFR_push, targetBR_push;
+    
+    int targetFL_backup, targetBL_backup, targetFR_backup, targetBR_backup;
+    
+    int targetFL_repush, targetBL_repush, targetFR_repush, targetBR_repush;
+    
+    int targetFL_rebackup, targetBL_rebackup, targetFR_rebackup, targetBR_rebackup;
+    
+    boolean vuMark_Left = false,  vuMark_Right = false, vuMark_Center = false, vuMark_Unknown= false;
+
+    // State used for updating telemetry
+    Orientation angles;
+    Acceleration gravity;
+
+    @Override public void runOpMode() {
+
+        //vuforia 
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        VuforiaLocalizer.Parameters V_parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
+        topJewel = hardwareMap.get(Servo.class,"top_Jewel");
+        V_parameters.vuforiaLicenseKey = "Aafd4OT/////AAAAGaP7TsnlGkrcuLp33dxex75AR5RZKWEdvaWtsA/HuWW89X76KANsAg/yLnn2jY9gjuLAqWlZ6ZJaqI2BmtckzRZres9TNbHKeSEdhZPTpDl8OkmbvK9xcGG9dRdbKoyNWbhpQeM7J7xIlD9Fr3M9OVJJniFkxN2Bh3Vhi+CClnHVQZizsBen44gHa7elMGPHN8U9cJMI002LKa+GFeSXthJUCGQo/vsq8ChymwuVaI5y+b0UoR7710Wq7VnUi4wd0hj1yKb82fyOxDmDkjr8Pt2/V6UTWEvA5vIkzpxPyG8zPBszG4ILJGcwPRQ2yZL5lKho6SuUUMkFpU8Gu6KlL+z3/aYXb/fGNe+ba6KoG5At";
+        //sets camera to front
+        V_parameters.cameraDirection = VuforiaLocalizer.CameraDirection.FRONT;
+        this.vuforia = ClassFactory.createVuforiaLocalizer(V_parameters);
+        
+        //gyro
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit           = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit           = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
+        parameters.loggingEnabled      = true;
+        parameters.loggingTag          = "IMU";
+        parameters.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+        
+        //hardware 
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+        frontRight = hardwareMap.get(DcMotor.class, "front_Right");
+        frontLeft  = hardwareMap.get(DcMotor.class, "front_Left"); 
+        backLeft   = hardwareMap.get(DcMotor.class, "back_Left");
+        backRight  = hardwareMap.get(DcMotor.class, "back_Right");
+        colorSensor = hardwareMap.colorSensor.get("color_Sensor");
+        bottomJewel = hardwareMap.get(Servo.class,"bottom_Jewel");
+        topJewel = hardwareMap.get(Servo.class,"top_Jewel");
+        vLiftMotor = hardwareMap.get(DcMotor.class, "vLift_Motor");
+        vLiftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftClaw   = hardwareMap.get(Servo.class,"left_Claw");  
+        rightClaw  = hardwareMap.get(Servo.class,"right_Claw"); 
+        
+        frontRight.setDirection(DcMotor.Direction.FORWARD);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setDirection(DcMotor.Direction.REVERSE);  
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setDirection(DcMotor.Direction.FORWARD);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setDirection(DcMotor.Direction.REVERSE);  
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        // Set up our telemetry dashboard
+        composeTelemetry();
+
+        // Wait until we're told to go
+        waitForStart();
+        
+        positionFL= frontLeft.getCurrentPosition(); 
+        positionBL= backLeft.getCurrentPosition();
+        positionFR= frontRight.getCurrentPosition();
+        positionBR= backRight.getCurrentPosition();
+        
+        leftClaw.setPosition(0);  //hold glif
+        rightClaw.setPosition(1); 
+            
+        vLiftMotor.setPower(1); //raises lift so it doesn't hit floor when leaving balancing stone
+        sleep(500); // setPower for half a second
+        vLiftMotor.setPower(0);
+        
+        jewel();
+        //sleep(3000);
+       
+        target_vuL= (positionFL + (int)(COUNTS_PER_INCH *1)*(-1)); 
+        target_vuR= (positionFR + (int)(COUNTS_PER_INCH *1)*(-1));
+        toVumark(); //moves robot forward to see vuMark
+        vuforia();
+        
+        //moves 35 inches, which is about 2.9 ft 
+        targetBL_L= (positionBL + (int)(COUNTS_PER_INCH *30)*(-1));
+        targetFL_L= (positionFL + (int)(COUNTS_PER_INCH *30)*(-1));//-1 bc motors r reversed
+        targetFR_L= (positionFR + (int)(COUNTS_PER_INCH *30)*(-1));
+        targetBR_L= (positionBR + (int)(COUNTS_PER_INCH *30)*(-1));
+        
+        targetBL_C= (positionBL + (int)(COUNTS_PER_INCH *35)*(-1));
+        targetFL_C= (positionFL + (int)(COUNTS_PER_INCH *35)*(-1));//-1 bc motors r reversed
+        targetFR_C= (positionFR + (int)(COUNTS_PER_INCH *35)*(-1));
+        targetBR_C= (positionBR + (int)(COUNTS_PER_INCH *35)*(-1));
+        
+        targetBL_R= (positionBL + (int)(COUNTS_PER_INCH *38)*(-1));
+        targetFL_R= (positionFL + (int)(COUNTS_PER_INCH *38)*(-1));//-1 bc motors r reversed
+        targetFR_R= (positionFR + (int)(COUNTS_PER_INCH *38)*(-1));
+        targetBR_R= (positionBR + (int)(COUNTS_PER_INCH *38)*(-1));
+        
+        toCryptobox();
+        
+        gyro();
+    
+        targetBL_push= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH * 6.5)*-1);
+        targetFL_push= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5)*-1);//bc motors r reversed
+        targetFR_push= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5)*-1);
+        targetBR_push= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5)*-1);
+        
+        push();
+        
+        leftClaw.setPosition(.7);  //drop glif
+        rightClaw.setPosition(.3);
+        
+        targetBL_backup=  backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH * 4.5);
+        targetFL_backup= frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *4.5);
+        targetFR_backup= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *4.5));
+        targetBR_backup= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *4.5));
+        
+        backup();
+        
+        targetBL_repush= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH * 3.8)*-1);
+        targetFL_repush= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *3.8)*-1);//bc motors r reversed
+        targetFR_repush= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *3.8)*-1);
+        targetBR_repush= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *3.8)*-1);
+        
+        leftClaw.setPosition(.3);  //close claw to push glif
+        rightClaw.setPosition(.7);
+        
+        repush(); 
+        
+        targetBL_rebackup= backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH * 6.5);
+        targetFL_rebackup= frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5);//bc motors r reversed
+        targetFR_rebackup= frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5);
+        targetBR_rebackup= backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *6.5);
+        
+        rebackUp();
+    }
+    
+    //----------------------------------------------------------------------------------------------
+    //Methods
+    //----------------------------------------------------------------------------------------------
+    protected void toVumark(){
+        frontLeft.setTargetPosition(target_vuL);
+        backLeft.setTargetPosition(target_vuL);
+        frontRight.setTargetPosition(target_vuR);            
+        backRight.setTargetPosition(target_vuR);
+        
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+       
+        frontLeft.setPower(.2);
+        backLeft.setPower(.2);
+        frontRight.setPower(.2);
+        backRight.setPower(.2);
+        
+        while(frontLeft.isBusy()){ //once @ position, stop robot
+            idle();
+        }
+            
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    }
+    
+    protected void vuforia(){
+        VuforiaTrackables relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
+        VuforiaTrackable relicTemplate = relicTrackables.get(0);
+        relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
+
+        while (opModeIsActive() && (runtime.seconds() < 20.0)) {
+            relicTrackables.activate(); //these need to be in this loop otherwise vuMark will always say unknown
+            RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
+        
+            if (vuMark == RelicRecoveryVuMark.LEFT) {
+                vuMark_Left = true;
+                telemetry.addData("VuMark", "left");
+            }
+
+            else if (vuMark == RelicRecoveryVuMark.RIGHT) {
+                vuMark_Right = true;
+                telemetry.addData("VuMark", "right");
+            }
+
+            else if (vuMark == RelicRecoveryVuMark.CENTER) {
+                vuMark_Center = true;
+            }
+            
+            else {
+                telemetry.addData("VuMark", "not visible");
+                vuMark_Unknown=true;
+            }
+            
+        telemetry.addData("VuMark", "%s visible", vuMark);
+        telemetry.update();
+        }//end OpmodeIsActive&Runtime<6
+    } // end Vuforia
+    
+    protected void jewel()  { 
+        topJewel.setPosition(.67); //drop down arm
+        sleep(2000);
+        
+        if(colorSensor.red() > colorSensor.blue()) //determines if ball is red or blue
+        {
+            //this was .8 and .2 but i just changed it 12/20 to c if it will stop hitting channel
+            bottomJewel.setPosition(.7); //if red it swivels left and hits ball
+            sleep(1500);
+        }
+        
+        else 
+        {
+            bottomJewel.setPosition(.3); 
+            sleep(1500);
+        }
+        
+        topJewel.setPosition(.4); //raises arm
+        sleep(1000);
+        bottomJewel.setPosition(.5);
+        sleep(500);
+        topJewel.setPosition(0);
+    } //end jewel  
+    
+    protected void toCryptobox(){
+        if(vuMark_Left == true){
+            //moves about 3 feet (1.5 tiles) 
+            frontLeft.setTargetPosition(targetFL_L);
+            backLeft.setTargetPosition(targetBL_L);
+            frontRight.setTargetPosition(targetFR_L);
+            backRight.setTargetPosition(targetBR_L);
+        
+            frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+       
+            frontLeft.setPower(.2);
+            backLeft.setPower(.2);
+            frontRight.setPower(.2);
+            backRight.setPower(.2);
+        
+            while(frontLeft.isBusy()){ //once @ position, stop robot
+                idle();
+            }
+            
+            frontLeft.setPower(0);
+            backLeft.setPower(0);
+            frontRight.setPower(0);
+            backRight.setPower(0);
+        }//end if(vuMark_Left = true)
+        
+        else if (vuMark_Right == true){
+            //moves about 3 feet (1.5 tiles) 
+            frontLeft.setTargetPosition(targetFL_R);
+            backLeft.setTargetPosition(targetBL_R);
+            frontRight.setTargetPosition(targetFR_R);
+            backRight.setTargetPosition(targetBR_R);
+        
+            frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+       
+            frontLeft.setPower(.2);
+            backLeft.setPower(.2);
+            frontRight.setPower(.2);
+            backRight.setPower(.2);
+        
+            while(frontLeft.isBusy()){ //once @ position, stop robot
+                idle();
+            }
+            
+            frontLeft.setPower(0);
+            backLeft.setPower(0);
+            frontRight.setPower(0);
+            backRight.setPower(0);
+        }//end if(vuMark_Right = true)
+        
+        else if(vuMark_Center == true){
+        //moves about 3 feet (1.5 tiles) 
+            frontLeft.setTargetPosition(targetFL_C);
+            backLeft.setTargetPosition(targetBL_C);
+            frontRight.setTargetPosition(targetFR_C);
+            backRight.setTargetPosition(targetBR_C);
+        
+            frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+       
+            frontLeft.setPower(.2);
+            backLeft.setPower(.2);
+            frontRight.setPower(.2);
+            backRight.setPower(.2);
+        
+            while(frontLeft.isBusy()){ //once @ position, stop robot
+                idle();
+            }
+            
+            frontLeft.setPower(0);
+            backLeft.setPower(0);
+            frontRight.setPower(0);
+            backRight.setPower(0);
+        }//end if(vuMark_Center = true)
+        
+        else if (vuMark_Unknown == true)// if vuMark is unknown, put glif in center
+            frontLeft.setTargetPosition(targetFL_C);
+            backLeft.setTargetPosition(targetBL_C);
+            frontRight.setTargetPosition(targetFR_C);
+            backRight.setTargetPosition(targetBR_C);
+        
+            frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+       
+            frontLeft.setPower(.2);
+            backLeft.setPower(.2);
+            frontRight.setPower(.2);
+            backRight.setPower(.2);
+        
+            while(frontLeft.isBusy()){ //once @ position, stop robot
+                idle();
+            }
+            
+            frontLeft.setPower(0);
+            backLeft.setPower(0);
+            frontRight.setPower(0);
+            backRight.setPower(0);
+    } //end CryptoBox
+
+    protected void gyro(){
+        // Start the logging of measured acceleration
+        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+        frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        
+        // Loop and update the dashboard
+            telemetry.update();
+            while ((Math.abs (angles.firstAngle)) < 80 && opModeIsActive())
+            {
+                frontRight.setPower(-.3);
+                backRight.setPower(-.3);
+                frontLeft.setPower(.3);
+                backLeft.setPower(.3);
+                angles = imu.getAngularOrientation();
+            }
+    
+            frontLeft.setPower(0);
+            backLeft.setPower(0);
+            frontRight.setPower(0);
+            backRight.setPower(0);
+        }//end gyro
+
+    protected void backup(){
+         frontLeft.setTargetPosition(targetFL_backup);
+        backLeft.setTargetPosition(targetBL_backup);
+        frontRight.setTargetPosition(targetFR_backup);
+        backRight.setTargetPosition(targetBR_backup);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(.3);
+        backLeft.setPower(.3);
+        frontRight.setPower(.3);
+        backRight.setPower(.3);
+        
+        while(frontLeft.isBusy()){
+            idle();
+        }
+        
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    } //end backup
+
+    protected void push(){
+        frontLeft.setTargetPosition(targetFL_push);
+        backLeft.setTargetPosition(targetBL_push);
+        frontRight.setTargetPosition(targetFR_push);
+        backRight.setTargetPosition(targetBR_push);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(.3);
+        backLeft.setPower(.3);
+        frontRight.setPower(.3);
+        backRight.setPower(.3);
+        
+        while(frontLeft.isBusy()){
+            idle();
+        }
+    
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    } //end push
+    
+    protected void rebackUp(){
+        frontLeft.setTargetPosition(targetFL_rebackup);
+        backLeft.setTargetPosition(targetBL_rebackup);
+        frontRight.setTargetPosition(targetFR_rebackup);
+        backRight.setTargetPosition(targetBR_rebackup);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(.3);
+        backLeft.setPower(.3);
+        frontRight.setPower(.3);
+        backRight.setPower(.3);
+        
+        while(frontLeft.isBusy()){
+            idle();
+        }
+    
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+    } // end rebackUp
+
+    protected void repush(){
+        frontLeft.setTargetPosition(targetFL_repush);
+        backLeft.setTargetPosition(targetBL_repush);
+        frontRight.setTargetPosition(targetFR_repush);
+        backRight.setTargetPosition(targetBR_repush);
+
+        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        frontLeft.setPower(.3);
+        backLeft.setPower(.3);
+        frontRight.setPower(.3);
+        backRight.setPower(.3);
+        
+        while(frontLeft.isBusy()){
+            idle();
+        }
+    
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0); 
+    } //end repush
+    
+    //----------------------------------------------------------------------------------------------
+    // Telemetry Configuration
+    //----------------------------------------------------------------------------------------------
+
+   void composeTelemetry() {
+
+        // At the beginning of each telemetry update, grab a bunch of data
+        // from the IMU that we will then display in separate lines.
+        telemetry.addAction(new Runnable() { @Override public void run()
+                {
+                // Acquiring the angles is relatively expensive; we don't want
+                // to do that in each of the three items that need that info, as that's
+                // three times the necessary expense.
+                angles   = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                gravity  = imu.getGravity();
+                }
+            });
+
+        telemetry.addLine()
+            .addData("status", new Func<String>() {
+                @Override public String value() {
+                    return imu.getSystemStatus().toShortString();
+                    }
+                })
+            .addData("calib", new Func<String>() {
+                @Override public String value() {
+                    return imu.getCalibrationStatus().toString();
+                    }
+                });
+
+        telemetry.addLine()
+            .addData("heading", new Func<String>() {
+                @Override public String value() {
+                    return formatAngle(angles.angleUnit, angles.firstAngle);
+                    }
+                })
+            .addData("roll", new Func<String>() {
+                @Override public String value() {
+                    return formatAngle(angles.angleUnit, angles.secondAngle);
+                    }
+                })
+            .addData("pitch", new Func<String>() {
+                @Override public String value() {
+                    return formatAngle(angles.angleUnit, angles.thirdAngle);
+                    }
+                });
+
+        telemetry.addLine()
+            .addData("grvty", new Func<String>() {
+                @Override public String value() {
+                    return gravity.toString();
+                    }
+                })
+            .addData("mag", new Func<String>() {
+                @Override public String value() {
+                    return String.format(Locale.getDefault(), "%.3f",
+                            Math.sqrt(gravity.xAccel*gravity.xAccel
+                                    + gravity.yAccel*gravity.yAccel
+                                    + gravity.zAccel*gravity.zAccel));
+                    }
+                });
+    }
+
+    //----------------------------------------------------------------------------------------------
+    // Formatting
+    //----------------------------------------------------------------------------------------------
+
+    String formatAngle(AngleUnit angleUnit, double angle) {
+        return formatDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, angle));
+    }
+
+    String formatDegrees(double degrees){
+        return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
+    }
+    
+}
