@@ -1,0 +1,87 @@
+//using endGame boolean
+
+/* to combine this with DriveTrainSS code I might need to use a statement for checking if 
+endGame is false or else the new meanings for the buttons will combine w/ the old meanings and 
+when something is pressed both statements of code will execute. For example, when y is pressed 
+it will likely raise the lift and the relic claw will move, this could be fixed with this 
+statement in each method: if (gamepad2.dpad_up && (endGame == false)) or an XOR statement */
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.util.Hardware;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Gamepad;  
+
+@TeleOp
+public class RelicRecovery2 extends LinearOpMode {
+    
+    private DcMotor relicMotor;
+    private Servo relicRotator;
+    private Servo relicClaw;
+    boolean endGame= false; 
+    
+    @Override
+    public void runOpMode()
+    {
+        relicMotor= hardwareMap.get(DcMotor.class,"relic_Motor");
+        relicRotator= hardwareMap.get(Servo.class, "relic_Rotator");
+        relicClaw= hardwareMap.get(Servo.class,"relic_Claw");
+        
+        waitForStart(); 
+        
+        while (opModeIsActive())   
+        {  
+            if (gamepad2.left_bumper && gamepad2.right_bumper)
+            {
+                endGame= true;
+            }
+            
+            relicExtender();
+            relicRotator();
+            relicClaw();
+            
+        }//end OpModeIsActive
+    }//end runOpMode
+  
+   protected void relicExtender(){
+
+        //if endGame is true, then T & T returns T. If endGame is false then T & F returns F
+        if(gamepad2.y && endGame){ 
+            relicMotor.setPower(1);
+        }
+        
+        else if(gamepad2.a && (endGame==true)){
+            relicMotor.setPower(1);
+        }
+            
+        else {
+            relicMotor.setPower(0);
+        }
+    }
+    
+    protected void relicRotator(){
+        if (gamepad2.dpad_up && endGame)
+        { 
+            relicRotator.setPosition(1);
+        }
+        
+        else if (gamepad2.dpad_down && endGame){
+            relicRotator.setPosition(0);
+        }
+    }
+    
+    protected void relicClaw(){
+        if (gamepad2.dpad_right){ 
+            relicClaw.setPosition(0);
+        }
+        
+        else if (gamepad2.dpad_left){
+            relicClaw.setPosition(1);
+        }
+    }
+    
+}//end class
