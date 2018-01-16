@@ -215,9 +215,6 @@ public class BlueNewSat extends LinearOpMode
         telemetry();
         sleep(3000);
        
-        // target_vu= (positionFL + (int)(COUNTS_PER_INCH *1));
-        // target_vu2= (positionFR + (int)(COUNTS_PER_INCH *1));
-        // toVumark();
         vuforia();
         
         toCryptobox();
