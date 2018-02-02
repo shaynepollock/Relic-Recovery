@@ -41,7 +41,7 @@ import java.util.Locale;
 
 @Autonomous
 
-public class StatesBlueStrafe extends LinearOpMode
+public class StatesBlueLeft extends LinearOpMode
     {
     //----------------------------------------------------------------------------------------------
     // State
@@ -82,11 +82,6 @@ public class StatesBlueStrafe extends LinearOpMode
     int positionBL;
     int positionFR;
     int positionBR;
-    
-    int targetFL_Straight;
-    int targetBL_Straight;
-    int targetFR_Straight;
-    int targetBR_Straight;
     
     int targetFL_L;
     int targetBL_L;
@@ -183,6 +178,7 @@ public class StatesBlueStrafe extends LinearOpMode
 
         // Set up our telemetry dashboard
         range();
+        composeTelemetry();
         
         // Wait until we're told to go
         waitForStart();
@@ -192,10 +188,21 @@ public class StatesBlueStrafe extends LinearOpMode
         positionFR= frontRight.getCurrentPosition();
         positionBR= backRight.getCurrentPosition();
         
-        targetBL_Straight= (positionBL + (int)(COUNTS_PER_INCH *20)*(-1));
-        targetFL_Straight= (positionFL + (int)(COUNTS_PER_INCH *20)*(-1));//bc motors r reversed
-        targetFR_Straight= (positionFR + (int)(COUNTS_PER_INCH *20)*(-1));
-        targetBR_Straight= (positionBR + (int)(COUNTS_PER_INCH *20)*(-1));
+        targetBL_L= (positionBL + (int)(COUNTS_PER_INCH *25)*(-1));
+        targetFL_L= (positionFL + (int)(COUNTS_PER_INCH *25)*(-1));//bc motors r reversed
+        targetFR_L= (positionFR + (int)(COUNTS_PER_INCH *25)*(-1));
+        targetBR_L= (positionBR + (int)(COUNTS_PER_INCH *25)*(-1));
+        
+        //moves 35 inches, which is about 2.9 ft 
+        targetBL_C= (positionBL + (int)(COUNTS_PER_INCH *35)*(-1));
+        targetFL_C= (positionFL + (int)(COUNTS_PER_INCH *35)*(-1));//bc motors r reversed
+        targetFR_C= (positionFR + (int)(COUNTS_PER_INCH *35)*(-1));
+        targetBR_C= (positionBR + (int)(COUNTS_PER_INCH *35)*(-1));
+        
+        targetBL_R= (positionBL + (int)(COUNTS_PER_INCH *43)*(-1));
+        targetFL_R= (positionFL + (int)(COUNTS_PER_INCH *43)*(-1));//bc motors r reversed
+        targetFR_R= (positionFR + (int)(COUNTS_PER_INCH *43)*(-1));
+        targetBR_R= (positionBR + (int)(COUNTS_PER_INCH *43)*(-1));
         
         leftClaw.setPosition(.3); //new positions 1/20
         rightClaw.setPosition(.7);
@@ -211,25 +218,9 @@ public class StatesBlueStrafe extends LinearOpMode
        
         vuforia();
         
-        toCrypto();
+        toCryptobox();
         
-        //strafe right
-        targetBL_L= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *5)*(1));
-        targetFL_L= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *5)*(-1));//bc motors r reversed
-        targetFR_L= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *5)*(1));
-        targetBR_L= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *5)*(-1));
-        
-        targetBL_C= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *10)*(1));
-        targetFL_C= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *10)*(-1));//bc motors r reversed
-        targetFR_C= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *10)*(1));
-        targetBR_C= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *10)*(-1));
-        
-        targetBL_R= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *15)*(1));
-        targetFL_R= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *15)*(-1));//bc motors r reversed
-        targetFR_R= (frontRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *15)*(1));
-        targetBR_R= (backRight.getCurrentPosition() + (int)(COUNTS_PER_INCH *15)*(-1));
-        
-        strafe(); 
+        gyro();
     
         targetBL_push= (backLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH * 10)*-1);
         targetFL_push= (frontLeft.getCurrentPosition() + (int)(COUNTS_PER_INCH *10)*-1);//bc motors r reversed
@@ -291,13 +282,14 @@ public class StatesBlueStrafe extends LinearOpMode
     
     protected void newJewel() {
    
-    /* colorSensor reads color as HSV (Hue, Saturation, Value) with the Hue value from 0 to 360. 
+   /* colorSensor reads color as HSV (Hue, Saturation, Value) with the Hue value from 0 to 360. 
       Index 0 of array hsvValues returns the hue. The hue value determines if the color is red or blue. 
       If the sensor returns a hue value not within the range of the if statements below, the jewel 
       mechanism will return to its starting position and not hit a jewel. The point of using HSV is to
       set a range for the colors so that the jewel mechanism doesn't hit the wrong ball; this occurs
       when the robot is not positioned properly and the colorSensor reads the light which has a red value
       and returns that the color red is > than blue. */
+      
 
     topJewel.setPosition(.68); //drop down arm lucas was here btw
 
@@ -315,32 +307,51 @@ public class StatesBlueStrafe extends LinearOpMode
       sleep(1500);
     } 
    
-    //range for blue hue: between 200 and 250
-    else if (hueValue> 150 && hueValue< 250) //if blue
-    //else if (hueValue> 150 && hueValue< 200)//if blue
-    {
+   //range for blue hue: between 200 and 250
+   else if (hueValue> 150 && hueValue< 250) //if blue
+   //else if (hueValue> 150 && hueValue< 200)//if blue
+   {
       telemetry.addData("Color is: ", "Blue");
       telemetry.addData("Blue value:", hueValue);
       bottomJewel.setPosition(.2); //if red it swivels left and hits ball
       sleep(1500);
-    }
+   }
     
     else {
         double x=.5;
         telemetry.addData("Idk ", "the color");
         telemetry.addData("Color value:", hueValue);
-        // //while (! (( hueValue< 15 || hueValue>320 )||(hueValue> 150 && hueValue< 250)) )
-        // //{
-        //     for(int i=0; i<3; i++ )
-        //     {
-        //         bottomJewel.setPosition(x);
-        //         x=x+.05;
-        //         sleep(1000);
-        //     }
-        // //}
+        while (! (( hueValue< 15 || hueValue>320 )||(hueValue> 150 && hueValue< 250)) )
+        {
+
+            for(int i=0; i<3; i++ )
+            {
+                bottomJewel.setPosition(x);
+                x=x+.05;
+                sleep(1000);
+                Color.RGBToHSV(colorSensor.red() * 255, colorSensor.green() * 255, colorSensor.blue() * 255, hsvValues);
+                hueValue= hsvValues[index];
+            }
+        }
         
-        sleep(1000);
-    }
+        if (hueValue< 15 || hueValue>320) //if red
+        {  
+          telemetry.addData("Color is: ", "Red");
+          telemetry.addData("Red value:", hueValue);
+          bottomJewel.setPosition(.8); //if red it swivels left and hits ball
+          sleep(1500);
+        } 
+       
+       //range for blue hue: between 200 and 250
+       else if (hueValue> 150 && hueValue< 250) //if blue
+       //else if (hueValue> 150 && hueValue< 200)//if blue
+       {
+          telemetry.addData("Color is: ", "Blue");
+          telemetry.addData("Blue value:", hueValue);
+          bottomJewel.setPosition(.2); //if red it swivels left and hits ball
+          sleep(1500);
+       }
+      }         
     
     topJewel.setPosition(.4);
     sleep(1000);
@@ -349,7 +360,6 @@ public class StatesBlueStrafe extends LinearOpMode
     topJewel.setPosition(0);
 
 } //end newJewel()   
-
 
     protected void vuforia(){
         VuforiaTrackables relicTrackables = this.vuforia.loadTrackablesFromAsset("RelicVuMark");
@@ -395,35 +405,10 @@ public class StatesBlueStrafe extends LinearOpMode
         }//end OpmodeIsActive&Runtime<6
     } // end Vuforia
     
-    protected void toCrypto(){
-        frontLeft.setTargetPosition(targetFL_Straight);
-        backLeft.setTargetPosition(targetBL_Straight);
-        frontRight.setTargetPosition(targetFR_Straight);
-        backRight.setTargetPosition(targetBR_Straight);
+    protected void toCryptobox(){
         
-        frontLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backLeft.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        frontRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        backRight.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-       
-        frontLeft.setPower(.2);
-        backLeft.setPower(.2);
-        frontRight.setPower(.2);
-        backRight.setPower(.2);
-        
-        while(frontLeft.isBusy()){ //once @ position, stop robot
-            idle();
-        }
-            
-        frontLeft.setPower(0);
-        backLeft.setPower(0);
-        frontRight.setPower(0);
-        backRight.setPower(0);
-    }//end toCrypto()
-    
-    protected void strafe(){
         if(vuMark_Left == true){
-            frontLeft.setTargetPosition(targetFL_L);
+           frontLeft.setTargetPosition(targetFL_L);
             backLeft.setTargetPosition(targetBL_L);
             frontRight.setTargetPosition(targetFR_L);
             backRight.setTargetPosition(targetBR_L);
@@ -449,6 +434,7 @@ public class StatesBlueStrafe extends LinearOpMode
         }//end if(vuMark_Left = true)
         
         else if (vuMark_Right == true){
+            //moves about 3 feet (1.5 tiles) 
             frontLeft.setTargetPosition(targetFL_R);
             backLeft.setTargetPosition(targetBL_R);
             frontRight.setTargetPosition(targetFR_R);
@@ -475,6 +461,7 @@ public class StatesBlueStrafe extends LinearOpMode
         }//end if(vuMark_Right = true)
         
         else if(vuMark_Center == true){
+        //moves about 3 feet (1.5 tiles) 
             frontLeft.setTargetPosition(targetFL_C);
             backLeft.setTargetPosition(targetBL_C);
             frontRight.setTargetPosition(targetFR_C);
@@ -500,7 +487,7 @@ public class StatesBlueStrafe extends LinearOpMode
             backRight.setPower(0);
         }//end if(vuMark_Center = true)
         
-        else if (unknown == true){
+        else if (unknown == true)
             frontLeft.setTargetPosition(targetFL_C);
             backLeft.setTargetPosition(targetBL_C);
             frontRight.setTargetPosition(targetFR_C);
@@ -524,8 +511,35 @@ public class StatesBlueStrafe extends LinearOpMode
             backLeft.setPower(0);
             frontRight.setPower(0);
             backRight.setPower(0);
-        }
-    } //end strafe()
+    } //end CryptoBox
+
+    protected void gyro(){
+        // Start the logging of measured acceleration
+        telemetry.addData("In", "gyro");
+        telemetry.update();
+        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+        frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        
+        // Loop and update the dashboard
+            telemetry.update();
+            while ((Math.abs (angles.firstAngle)) < 80 && opModeIsActive())
+            {
+                frontRight.setPower(-.3);
+                backRight.setPower(-.3);
+                frontLeft.setPower(.3);
+                backLeft.setPower(.3);
+                angles = imu.getAngularOrientation();
+                telemetry.addData("In", "gyro loop");
+            }
+    
+        frontLeft.setPower(0);
+        backLeft.setPower(0);
+        frontRight.setPower(0);
+        backRight.setPower(0);
+        }//end gyro
 
     protected void backup(){
     
@@ -644,8 +658,7 @@ public class StatesBlueStrafe extends LinearOpMode
             
         telemetry.update();
     }
-   
-   //only use this when gyro method is called, not for blue strafe  
+    
    void composeTelemetry() {
 
         // At the beginning of each telemetry update, grab a bunch of data
