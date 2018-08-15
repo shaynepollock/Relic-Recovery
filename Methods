@@ -1,0 +1,41 @@
+package CrownJoules2018;
+
+import com.qualcomm.robotcore.robot.Robot;
+
+
+public class Methods{
+
+   /* protected void mecanumDrive()  
+    {  
+        motorPower = 1 - gamepad1.right_trigger; 
+            
+        //strafe doesn't work when motor power <.40
+        if (motorPower < .40)
+        {   
+            motorPower= (float) .40;
+        }
+            
+        double r = Math.hypot(gamepad1.left_stick_x, gamepad1.left_stick_y);  
+        double robotAngle = Math.atan2(gamepad1.left_stick_y, -gamepad1.left_stick_x) - Math.PI / 4;  
+        double rightX = -gamepad1.right_stick_x;  
+        final double FL = r * Math.cos(robotAngle) + rightX;  
+        final double FR = r * Math.sin(robotAngle) - rightX;  
+        final double BL = r * Math.sin(robotAngle) + rightX;  
+        final double BR = r * Math.cos(robotAngle) - rightX;  
+            
+        frontLeft.setPower(FL* motorPower);  
+        frontRight.setPower(FR* motorPower);  
+        backLeft.setPower(BL* motorPower);  
+        backRight.setPower(BR* motorPower); 
+    }//end of mecanumDrive
+    
+    //test wheels to check if secure 
+    protected void test()   
+    {  
+        frontLeft.setPower(gamepad1.left_stick_y);  
+        frontRight.setPower(gamepad1.right_stick_y);  
+        backLeft.setPower(gamepad1.left_stick_x);  
+        backRight.setPower(gamepad1.right_stick_x);  
+    } 
+ */   
+} //end of class
