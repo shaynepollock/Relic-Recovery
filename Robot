@@ -1,0 +1,24 @@
+package CrownJoules2018;
+
+import com.qualcomm.robotcore.hardware.Gamepad; 
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ColorSensor; 
+
+
+public class Robot {
+
+    private DcMotor frontRight;  
+    private DcMotor frontLeft;  
+    private DcMotor backRight;  
+    private DcMotor backLeft;  
+    private DcMotor vLiftMotor;  
+    private Servo leftClaw_t;
+    private Servo leftClaw_b;
+    private Servo rightClaw_t;
+    private Servo rightClaw_b; 
+    private Servo topJewel;
+    private Servo bottomJewel;
+    public float motorPower =1;
+    
+} //end class
