@@ -54,11 +54,7 @@ public class Autopt2 extends LinearOpMode {
         intakePivotServo.setPosition(intakePivotServoPos);
 
         while (opModeIsActive()) {
-            leftMotor.setPower(.45);
-            rightMotor.setPower(.45);
-            sleep(3000);
-            leftMotor.setPower(0);
-            rightMotor.setPower(0);
+
 
         }//end opModeIsActive
 

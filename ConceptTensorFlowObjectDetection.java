@@ -128,8 +128,15 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
 
         drawerMotor.setPower(1);
 
-        waitForStart();
+        liftPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        liftPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
+        leftMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        waitForStart();
 
         if (opModeIsActive()) {
             /** Activate Tensor Flow Object Detection. */
@@ -138,69 +145,53 @@ public class ConceptTensorFlowObjectDetection extends LinearOpMode {
             }
 
             while (opModeIsActive()) {
+
+                liftPivotMotor.setTargetPosition(1000);
+                while(liftPivotMotor.getCurrentPosition() < 1000) {
+                    sleep(100);
+                }
+
+                leftMotor.setTargetPosition(200);
+                rightMotor.setTargetPosition(200);
+
+                //Tensor flow code
                 if (tfod != null) {
                     // getUpdatedRecognitions() will return null if no new information is available since
                     // the last time that call was made.
                     List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
                     if (updatedRecognitions != null) {
-                      telemetry.addData("# Object Detected", updatedRecognitions.size());
-                      if (updatedRecognitions.size() == 3) {
-                        int goldMineralX = -1;
-                        int silverMineral1X = -1;
-                        int silverMineral2X = -1;
-                        for (Recognition recognition : updatedRecognitions) {
-                          if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
-                            goldMineralX = (int) recognition.getLeft();
-                          } else if (silverMineral1X == -1) {
-                            silverMineral1X = (int) recognition.getLeft();
-                          } else {
-                            silverMineral2X = (int) recognition.getLeft();
-                          }
+                        telemetry.addData("# Object Detected", updatedRecognitions.size());
+                        if (updatedRecognitions.size() == 3) {
+                            int goldMineralX = -1;
+                            int silverMineral1X = -1;
+                            int silverMineral2X = -1;
+                            for (Recognition recognition : updatedRecognitions) {
+                                if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                                    goldMineralX = (int) recognition.getLeft();
+                                } else if (silverMineral1X == -1) {
+                                    silverMineral1X = (int) recognition.getLeft();
+                                } else {
+                                    silverMineral2X = (int) recognition.getLeft();
+                                }
+                            }
+                            if (goldMineralX != -1 && silverMineral1X != -1 && silverMineral2X != -1) {
+                                if (goldMineralX < silverMineral1X && goldMineralX < silverMineral2X) {
+                                    telemetry.addData("Gold Mineral Position", "Left");
+                                    goldPos = "left";
+                                } else if (goldMineralX > silverMineral1X && goldMineralX > silverMineral2X) {
+                                    telemetry.addData("Gold Mineral Position", "Right");
+                                    goldPos = "right";
+                                } else {
+                                    telemetry.addData("Gold Mineral Position", "Center");
+                                    goldPos = "center";
+                                }
+                            }
                         }
-                        if (goldMineralX != -1 && silverMineral1X != -1 && silverMineral2X != -1) {
-                          if (goldMineralX < silverMineral1X && goldMineralX < silverMineral2X) {
-                            telemetry.addData("Gold Mineral Position", "Left");
-                            goldPos = "left";
-                          } else if (goldMineralX > silverMineral1X && goldMineralX > silverMineral2X) {
-                            telemetry.addData("Gold Mineral Position", "Right");
-                            goldPos = "right";
-                          } else {
-                            telemetry.addData("Gold Mineral Position", "Center");
-                            goldPos = "center";
-                          }
-                        }
-                      }
-                      telemetry.update();
+                        telemetry.update();
                     }
                 }
             }
         }
-
-        //Jake's auto code to unhang
-        //We need to check times.
-        /*drawerMotor.setPower(1);
-        sleep(2000);
-        drawerMotor.setPower(0);
-        sleep(500);
-        drawerMotor.setPower(1);
-        sleep(1000);
-        leftMotor.setPower(0.6);
-        rightMotor.setPower(0.6);
-        sleep(500);
-        drawerMotor.setPower(-1);
-        sleep(1000);
-        drawerMotor.setPower(0);
-
-        leftMotor.setPower(0);
-        rightMotor.setPower(0);
-
-        leftMotor.setPower(-0.6);
-        rightMotor.setPower(0.6);
-        sleep(500);
-
-        leftMotor.setPower(0);
-        rightMotor.setPower(0);*/
-
 
         if(goldPos.equals("left"))
         {

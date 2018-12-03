@@ -17,7 +17,7 @@ public class TempSP extends LinearOpMode{
     public DcMotor leftMotor;
     public DcMotor rightMotor;
     public DcMotor drawerMotor;
-    public float motorPower = 0.55f;
+    public float motorPower = 0.3f;
 
     public Servo intakePivotServo;
     public float intakePivotServoPos = 0.5f; //What the servo above's current pos is; Sets to this at start
@@ -47,20 +47,26 @@ public class TempSP extends LinearOpMode{
 
         leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftMotor.setDirection(DcMotor.Direction.REVERSE);
+        leftMotor.setDirection(DcMotor.Direction.FORWARD);
         rightMotor.setDirection(DcMotor.Direction.FORWARD);
         drawerMotor.setDirection(DcMotor.Direction.REVERSE);
         drawerMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         liftPivotMotor.setZeroPowerBehavior((DcMotor.ZeroPowerBehavior.BRAKE));
-        //drawerMotor.setPower(-1);
-        waitForStart(); //press play button, actives opMode
+        drawerMotor.setPower(-1);
 
         intakePivotServo.setPosition(intakePivotServoPos);
+
+        liftPivotMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        liftPivotMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+        drawerMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        drawerMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);*/
+
+        waitForStart(); //press play button, actives opMode
 
         while (opModeIsActive())   
         {  
             drive();
-            slowDrive();
             pivotIntake();
             pivotLift();
             toggleIntake();
@@ -75,49 +81,24 @@ public class TempSP extends LinearOpMode{
         leftMotor.setPower(gamepad1.left_stick_y * motorPower);
         rightMotor.setPower(gamepad1.right_stick_y * motorPower);
 
+        leftMotor.setPower(-(gamepad1.left_stick_x + gamepad1.left_stick_y) * motorPower);
+        rightMotor.setPower(-(gamepad1.left_stick_x + -gamepad1.left_stick_y) * motorPower);
+
+        telemetry.addData("Left Motor: ", leftMotor.getPower());
+        telemetry.addData("Right Motor: ", rightMotor.getPower());
+        telemetry.update();
+
         if(gamepad1.left_bumper)
-            motorPower = 1;
+            motorPower = 0.85f;
         else if(gamepad1.right_bumper)
             motorPower = 0.55f;
     }
 
-    public void slowDrive()
-    {
-        // add something here so that we can go slow while in to drop off shit
-        // while (gamepad2.)
-        //leftMotor.setPower(gamepad1.left_stick_y);
-
-    }
     public void pivotIntake()
     {
-        /*if(gamepad1.dpad_down)
-        {
-            intakePivotServoPos -= intakePivotSensitivity;
-            intakePivotServo.setPosition(intakePivotServoPos);
-        }
-        if(gamepad1.dpad_up)
-        {
-            intakePivotServoPos += intakePivotSensitivity;
-            intakePivotServo.setPosition(intakePivotServoPos);   
-        }
-        if(gamepad2.left_stick_y > 0.1 || gamepad2.left_stick_y < -0.1)
-        {
-            intakePivotServo.setPosition(intakePivotServo.getPosition()+(gamepad2.left_stick_y / 5));
-        }*/
-
-        //hey its shayne. This is obviously stupid but in case we can't get fancy stuff to work.
-        /*if(gamepad2.dpad_up) //up
-            intakePivotServo.setPosition(1);
-        if(gamepad2.dpad_down)//down
-            intakePivotServo.setPosition(0);
-        if(gamepad2.dpad_right)//middle
-            intakePivotServo.setPosition(.5); */
-
-        /*while(gamepad2.left_stick_y) //or if()... feel like if you do while then code is in that loop and you cant move robot at same time
-            intakePivotServo.setPosition(intakePivotServo.getPosition()+.1);*/
         intakePivotServo.setPosition(intakePivotServo.getPosition() + (gamepad2.left_stick_y / intakePivotSensitivity));
         telemetry.addData("IntakePosition", intakePivotServo.getPosition());
-        }
+    }
     
     public void toggleIntake()
     {
@@ -141,26 +122,11 @@ public class TempSP extends LinearOpMode{
             intakeServo2.setPower(0.7);
         }
     }
-    
-    public void pivotLift() {
-        /*if (gamepad1.left_bumper) {
-            if (liftPivotServoPos > -1) {
-                liftPivotServoPos -= liftPivotSensitivity;
-                liftPivotMotor.setPower(liftPivotServoPos);
-            }
-        }
-        if (gamepad1.right_bumper) {
-            if (liftPivotServoPos < 1) {
-                liftPivotServoPos += liftPivotSensitivity;
-                liftPivotMotor.se
-         }*/
-        //if(!liftLocked)
-        //if(liftPivotMotor.getCurrentPosition())
 
+    public void pivotLift() {
         liftPivotMotor.setPower(gamepad2.right_stick_y / liftPivotSensitivity);
 
-        if(gamepad2.x)
-        {
+        if (gamepad2.x) {
             liftPivotMotor.setPower(0.8);
             sleep(700);
             liftPivotMotor.setPower(0);
@@ -169,31 +135,29 @@ public class TempSP extends LinearOpMode{
             sleep(100);
             liftPivotMotor.setPower(0);
 
-        }
-        /*if(gamepad1.b && !liftLocked)
-        {
-            liftPivotMotor.setPower(liftLockPower);
-            liftLocked = true;
-        }
-        if(gamepad1.a && liftLocked)
-        {
-            liftLocked = false;
-        }*/
-    }
+            liftPivotMotor.setTargetPosition(1120); //Positive = spins right?
 
+        } else if (gamepad2.y) {
+            liftPivotMotor.setTargetPosition(-1120); //Positive = spins right?        }
+        }
+    }
     public void toggleDrawerSlides()
     {
-
         if(gamepad1.dpad_up)
+        {
+            drawerMotor.setTargetPosition(-1000);
             drawerMotor.setPower(1);
+        }
         if(gamepad1.dpad_down)
+        {
+            drawerMotor.setTargetPosition(1000);
             drawerMotor.setPower(-1);
-        if(gamepad1.dpad_left)
-            drawerMotor.setPower(0);
+        }
+        //i`f(gamepad1.dpad_left)
+        //    drawerMotor.setPower(0);
         //if(!gamepad1.dpad_down && !gamepad1.dpad_up)
           //  drawerMotor.setPower(0);
-        telemetry.addData("in toggleDrawerSlides", drawerMotor.getPower());
+        //telemetry.addData("in toggleDrawerSlides", drawerMotor.getPower());
         telemetry.update();
-
     }
 }
