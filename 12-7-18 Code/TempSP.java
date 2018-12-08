@@ -84,9 +84,12 @@ public class TempSP extends LinearOpMode{
     c
     public void drive()
     {
-        leftMotor.setPower(-(gamepad1.left_stick_x + gamepad1.left_stick_y) * motorPower);
-        rightMotor.setPower(-(gamepad1.left_stick_x + -gamepad1.left_stick_y) * motorPower);
-
+        //deadzone. If result of setPower() is small. Telemetry was giving values for setPower so idk xy cords.
+        if( (gamepad1.left_stick_x /motorPower >.13) || (gamepad1.left_stick_y >.1) )
+        {   
+            leftMotor.setPower(-(gamepad1.left_stick_x + gamepad1.left_stick_y) * motorPower);
+            rightMotor.setPower(-(gamepad1.left_stick_x + -gamepad1.left_stick_y) * motorPower);
+        }
         telemetry.addData("Left Motor: ", leftMotor.getPower());
         telemetry.addData("Right Motor: ", rightMotor.getPower());
         telemetry.update();
