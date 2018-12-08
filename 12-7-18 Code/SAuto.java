@@ -29,7 +29,9 @@ public class SAuto extends LinearOpMode {
     final double WHEEL_DIAMETER_INCHES = 6.0;
     final double COUNTS_PER_INCH = ( COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415); //encoder counts x gear reduction / circumference of wheel
     final double DRIVE_SPEED = .6;
-
+    
+    private ElapsedTime runtime = new ElapsedTime();
+    
     @Override
     public void runOpMode() {
         //connects motors to hub & phone- use name in quotes for config
@@ -43,7 +45,14 @@ public class SAuto extends LinearOpMode {
         rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftMotor.setDirection(DcMotor.Direction.FORWARD);
         rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
+        //going to spin wheels w hand and c position change
+        telemetry.addData("leftMotor position:", leftMotor.getCurrentPosition());
+        telemetry.addData("rightMotor position:", rightMotor.getCurrentPosition());
+        telemtry.update();
+        
         waitForStart(); //press play button, actives opMode
 
         intakePivotServo.setPosition(intakePivotServoPos);
@@ -57,18 +66,30 @@ public class SAuto extends LinearOpMode {
         leftMotor.setTargetPosition(targetLM);
         rightMotor.setTargetPosition(targetRM);
 
-        leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        leftMotor.setPower(DRIVE_SPEED);
+        rightMotor.setPower(DRIVE_SPEED-.1);//just bc right motors always go faster
 
-         leftMotor.setPower(DRIVE_SPEED);
-         rightMotor.setPower(DRIVE_SPEED-.1);//just bc right motors always go faster
-
-         while(rightMotor.isBusy()){ //once @ position, stop robot //lft motors=slower/have w...stuck in loop?
+        while(rightMotor.isBusy()){ //once @ position, stop robot //lft motors=slower/have w...stuck in loop?
+            telemetry.addData("leftMotor ticks:", leftMotor.getCurrentPosition());
+            telemetry.addData("rightMotor ticks:", rightMotor.getCurrentPosition());
+            telemetry.update();
             idle();
-         }
-
-         leftMotor.setPower(0);
-         rightMotor.setPower(0);
+        }
+        
+        if(opModeIsActive() && (getRuntime()>18.0 && ((leftMotor.getCurrentPosition() <targetLM) || (rightMotor.getCurrentPosition() <targetRM)))      
+        {
+            leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+            rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODERS);
+            telemetry.addData("Turned off encoders"," getRuntime());
+            telemetry.update();
+            leftMotor.setPower(.5);
+            rightMotor.setPower(.5); 
+            telemetry.addData("Blindly driving"," getRuntime());
+            telemetry.update();                  
+            sleep(3500);                       
+        }
+        leftMotor.setPower(0);
+        rightMotor.setPower(0);
 
         }//end opModeIsActive
 
