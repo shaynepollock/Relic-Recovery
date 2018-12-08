@@ -18,17 +18,20 @@ public class SAuto extends LinearOpMode {
 
     public CRServo intakeServo1;
     public CRServo intakeServo2;
+    
+    int positionLM;
+    int positionRM;
+    int targetLM;
+    int targetRM;
+
+    final double COUNTS_PER_MOTOR_REV =1120; //NeveRest 40 motor gives 1120 counts per revolution of output shaft
+    final double DRIVE_GEAR_REDUCTION = .66; //<1.0 if geared Up (big to small) output/input. input gear turns 1/2 for output to turn once.
+    final double WHEEL_DIAMETER_INCHES = 6.0;
+    final double COUNTS_PER_INCH = ( COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415); //encoder counts x gear reduction / circumference of wheel
+    final double DRIVE_SPEED = .6;
 
     @Override
     public void runOpMode() {
-
-        final double COUNTS_PER_MOTOR_REV =1120; //NeveRest 40 motor gives 1120         counts per revolution of output shaft
-        final double DRIVE_GEAR_REDUCTION = .66; //<1.0 if geared Up (big to small) output/input. input gear turns 1/2 for output to turn once.
-        final double WHEEL_DIAMETER_INCHES = 6.0;
-        final double COUNTS_PER_INCH = ( COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415);
-        //encoder counts x gear reduction / circumference of wheel
-        final double DRIVE_SPEED = .6;
-
         //connects motors to hub & phone- use name in quotes for config
         leftMotor = hardwareMap.get(DcMotor.class, "left_Motor");
         rightMotor = hardwareMap.get(DcMotor.class, "right_Motor");
@@ -38,40 +41,34 @@ public class SAuto extends LinearOpMode {
 
         leftMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        leftMotor.setDirection(DcMotor.Direction.REVERSE);
-        rightMotor.setDirection(DcMotor.Direction.FORWARD);
-
-        int positionLM;
-        int positionRM;
-        int targetLM;
-        int targetRM;
+        leftMotor.setDirection(DcMotor.Direction.FORWARD);
+        rightMotor.setDirection(DcMotor.Direction.REVERSE);
 
         waitForStart(); //press play button, actives opMode
 
         intakePivotServo.setPosition(intakePivotServoPos);
 
-        while (opModeIsActive()) {
-            positionLM= leftMotor.getCurrentPosition();
-            positionRM= rightMotor.getCurrentPosition();
+        positionLM= leftMotor.getCurrentPosition();
+        positionRM= rightMotor.getCurrentPosition();
 
-            targetLM= (positionLM + (int)(COUNTS_PER_INCH*4));
-            targetRM= (positionRM + (int)(COUNTS_PER_INCH*4));
+        targetLM= (positionLM + (int)(COUNTS_PER_INCH*4));
+        targetRM= (positionRM + (int)(COUNTS_PER_INCH*4));
 
-            leftMotor.setTargetPosition(targetLM);
-            rightMotor.setTargetPosition(targetRM);
+        leftMotor.setTargetPosition(targetLM);
+        rightMotor.setTargetPosition(targetRM);
 
-            leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        leftMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
-            leftMotor.setPower(.2);
-            rightMotor.setPower(.2);
+         leftMotor.setPower(DRIVE_SPEED);
+         rightMotor.setPower(DRIVE_SPEED-.1);//just bc right motors always go faster
 
-            while(leftMotor.isBusy()){ //once @ position, stop robot
-                idle();
-            }
+         while(rightMotor.isBusy()){ //once @ position, stop robot //lft motors=slower/have w...stuck in loop?
+            idle();
+         }
 
-            leftMotor.setPower(0);
-            rightMotor.setPower(0);
+         leftMotor.setPower(0);
+         rightMotor.setPower(0);
 
         }//end opModeIsActive
 
