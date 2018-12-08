@@ -25,7 +25,7 @@ public class SAuto extends LinearOpMode {
     int targetRM;
 
     final double COUNTS_PER_MOTOR_REV =1120; //NeveRest 40 motor gives 1120 counts per revolution of output shaft
-    final double DRIVE_GEAR_REDUCTION = .66; //<1.0 if geared Up (big to small) output/input. input gear turns 1/2 for output to turn once.
+    final double DRIVE_GEAR_REDUCTION = 1; //<1.0 if geared Up (big to small) output/input. input gear turns 1/2 for output to turn once.
     final double WHEEL_DIAMETER_INCHES = 6.0;
     final double COUNTS_PER_INCH = ( COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415); //encoder counts x gear reduction / circumference of wheel
     final double DRIVE_SPEED = .6;
